@@ -117,5 +117,74 @@ table img {
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script src="app.js"></script>
+  <script>
+    // Supabase setup (replace with your project credentials)
+const SUPABASE_URL = "https://sellietbjcoxjbxfvpff.supabase.co";  
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGxpZXRiamNveGpieGZ2cGZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0MzI2NTcsImV4cCI6MjA3MzAwODY1N30.dCq6MTZn46aPQNP6AgAkraczT4qCgaflikd1vqRRlCc";  
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Add Medicine
+const form = document.getElementById("medicineForm");
+if (form) {
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const name = document.getElementById("name").value;
+    const price = parseFloat(document.getElementById("price").value);
+    const stock = parseInt(document.getElementById("stock").value);
+    const image_url = document.getElementById("image_url").value;
+
+    const { error } = await db.from("medicines").insert([{ name, price, stock, image_url }]);
+    if (error) {
+      alert("❌ Error: " + error.message);
+    } else {
+      alert("✅ Medicine Added!");
+      loadMedicines();
+      form.reset();
+    }
+  });
+}
+
+// Load Medicines
+async function loadMedicines() {
+  const tableBody = document.querySelector("#medicineTable tbody");
+  if (!tableBody) return;
+
+  const { data, error } = await db.from("medicines").select("*");
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  tableBody.innerHTML = "";
+  data.forEach((m) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${m.name}</td>
+      <td>₹${m.price}</td>
+      <td>${m.stock}</td>
+      <td><img src="${m.image_url}" alt="${m.name}" width="50"></td>
+      <td>
+        <button onclick="deleteMedicine(${m.id})">Delete</button>
+      </td>
+    `;
+    tableBody.appendChild(row);
+  });
+}
+
+// Delete Medicine
+async function deleteMedicine(id) {
+  const { error } = await db.from("medicines").delete().eq("id", id);
+  if (error) {
+    alert("❌ Error deleting");
+  } else {
+    alert("🗑️ Deleted!");
+    loadMedicines();
+  }
+}
+
+// Load medicines on page open
+loadMedicines();
+
+  </script>
 </body>
 </html>
