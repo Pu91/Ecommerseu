@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Manage Medicines</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f9f9f9;
+}
+
+header.admin-header {
+  background: blue;
+  color: #fff;
+  padding: 15px;
+  text-align: center;
+}
+
+header nav a {
+  margin: 0 10px;
+  text-decoration: none;
+  color: #fff;
+}
+
+header nav a.active {
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+.container {
+  width: 90%;
+  max-width: 1000px;
+  margin: 20px auto;
+}
+
+.card {
+  background: #fff;
+  padding: 15px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+form input, form button {
+  display: block;
+  width: 100%;
+  margin: 10px 0;
+  padding: 8px;
+  font-size: 16px;
+}
+
+button {
+  background: #3498db;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #2980b9;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+table th, table td {
+  padding: 10px;
+  border: 1px solid #ddd;
+  text-align: center;
+}
+
+table img {
+  width: 50px;
+}
+
+  </style>
+</head>
+<body>
+  <header class="admin-header">
+    <h1>Pharmacy Admin Panel</h1>
+    <nav>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="medicines.html" class="active">Medicines</a>
+      <a href="orders.html">Orders</a>
+      <a href="appointments.html">Appointments</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Add New Medicine</h2>
+      <form id="medicineForm">
+        <input type="text" id="name" placeholder="Medicine Name" required>
+        <input type="number" id="price" placeholder="Price" required>
+        <input type="number" id="stock" placeholder="Stock" required>
+        <input type="text" id="image" placeholder="Image URL" required>
+        <button type="submit">Add Medicine</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>All Medicines</h2>
+      <table id="medicineTable">
+        <thead>
+          <tr>
+            <th>Name</th><th>Price</th><th>Stock</th><th>Image</th><th>Action</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="app.js"></script>
+  <script>
+    // Supabase setup
+const SUPABASE_URL = "https://sellietbjcoxjbxfvpff.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGxpZXRiamNveGpieGZ2cGZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0MzI2NTcsImV4cCI6MjA3MzAwODY1N30.dCq6MTZn46aPQNP6AgAkraczT4qCgaflikd1vqRRlCc";
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Add Medicine
+const form = document.getElementById("medicineForm");
+if (form) {
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const name = document.getElementById("name").value;
+    const price = parseFloat(document.getElementById("price").value);
+    const stock = parseInt(document.getElementById("stock").value);
+    const image = document.getElementById("image").value;
+
+    const { error } = await db.from("medicines").insert([{ name, price, stock, image }]);
+    if (error) {
+      alert("❌ Error: " + error.message);
+    } else {
+      alert("✅ Medicine Added!");
+      loadMedicines();
+      form.reset();
+    }
+  });
+}
+
+// Load Medicines
+async function loadMedicines() {
+  const tableBody = document.querySelector("#medicineTable tbody");
+  if (!tableBody) return;
+
+  const { data, error } = await db.from("medicines").select("*");
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  tableBody.innerHTML = "";
+  data.forEach((m) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${m.name}</td>
+      <td>₹${m.price}</td>
+      <td>${m.stock}</td>
+      <td><img src="${m.image}" alt="${m.name}"></td>
+      <td>
+        <button onclick="deleteMedicine(${m.id})">Delete</button>
+      </td>
+    `;
+    tableBody.appendChild(row);
+  });
+}
+
+// Delete Medicine
+async function deleteMedicine(id) {
+  const { error } = await db.from("medicines").delete().eq("id", id);
+  if (error) {
+    alert("❌ Error deleting");
+  } else {
+    alert("🗑️ Deleted!");
+    loadMedicines();
+  }
+}
+
+// Load medicines on page open
+loadMedicines();
+
+  </script>
+</body>
+</html>
