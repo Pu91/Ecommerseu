@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard | Pharmacy Store</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/@supabase/supabase-js"></script>
+  <style>
+   /* ---------- GENERAL RESET ---------- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+body {
+  background: #f8f9fa;
+  color: #333;
+}
+
+/* ---------- HEADER & NAV ---------- */
+header {
+  background: #2d6cdf;
+  color: #fff;
+  padding: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+header h1 {
+  font-size: 20px;
+}
+
+header nav a {
+  margin-left: 15px;
+  color: #fff;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+header nav a.active {
+  text-decoration: underline;
+}
+
+/* ---------- DASHBOARD SUMMARY CARDS ---------- */
+#summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 15px;
+  margin: 20px;
+}
+
+#summary .card {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  font-size: 16px;
+  font-weight: bold;
+  color: #2d6cdf;
+}
+
+/* ---------- TABLES ---------- */
+table {
+  width: 95%;
+  margin: 20px auto;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+thead {
+  background: #2d6cdf;
+  color: white;
+}
+
+th, td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+tr:nth-child(even) {
+  background: #f2f2f2;
+}
+
+button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+button:hover {
+  opacity: 0.9;
+}
+
+button.accept {
+  background: #28a745;
+  color: #fff;
+}
+
+button.print {
+  background: #ffc107;
+  color: #fff;
+}
+
+/* ---------- RESPONSIVE ---------- */
+@media screen and (max-width: 768px) {
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  header nav {
+    margin-top: 10px;
+  }
+  table, thead, tbody, th, td, tr {
+    display: block;
+  }
+  tr {
+    margin-bottom: 15px;
+  }
+  th {
+    display: none;
+  }
+  td {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 10px;
+  }
+  td::before {
+    content: attr(data-label);
+    font-weight: bold;
+  }
+  #summary {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+}
+
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Admin Dashboard</h1>
+    <nav>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="orders.html">Orders</a>
+      <a href="appointments.html">Appointments</a>
+    </nav>
+  </header>
+
+  <main>
+    <h2>Summary</h2>
+    <div id="summary" class="grid"></div>
+  </main>
+
+  <script>
+
+// Supabase Setup
+const SUPABASE_URL = "https://sellietbjcoxjbxfvpff.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGxpZXRiamNveGpieGZ2cGZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0MzI2NTcsImV4cCI6MjA3MzAwODY1N30.dCq6MTZn46aPQNP6AgAkraczT4qCgaflikd1vqRRlCc";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function loadSummary() {
+  const { data: orders, error } = await supabase
+    .from("orders")
+    .select("*");
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  const today = new Date().toISOString().split("T")[0];
+  const todayOrders = orders.filter(o => o.created_at.startsWith(today));
+  const totalOrders = orders.length;
+  const acceptedOrders = orders.filter(o => o.status === "accepted").length;
+  const pendingOrders = orders.filter(o => o.status === "pending").length;
+  const todayEarning = todayOrders.reduce((sum, o) => sum + Number(o.total_amount), 0);
+
+  const summaryDiv = document.getElementById("summary");
+  summaryDiv.innerHTML = `
+    <div class="card">Total Orders: ${totalOrders}</div>
+    <div class="card">Accepted Orders: ${acceptedOrders}</div>
+    <div class="card">Pending Orders: ${pendingOrders}</div>
+    <div class="card">Today's Orders: ${todayOrders.length}</div>
+    <div class="card">Today's Earning: ₹${todayEarning}</div>
+  `;
+}
+
+document.addEventListener("DOMContentLoaded", loadSummary);
+</script>
+</body>
+</html>

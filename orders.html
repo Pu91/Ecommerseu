@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Orders | Pharmacy Store</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/@supabase/supabase-js"></script>
+  <style>
+    /* ---------- GENERAL RESET ---------- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+body {
+  background: #f8f9fa;
+  color: #333;
+}
+
+/* ---------- HEADER & NAV ---------- */
+header {
+  background: #2d6cdf;
+  color: #fff;
+  padding: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+header h1 {
+  font-size: 20px;
+}
+
+header nav a {
+  margin-left: 15px;
+  color: #fff;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+header nav a.active {
+  text-decoration: underline;
+}
+
+/* ---------- DASHBOARD SUMMARY CARDS ---------- */
+#summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 15px;
+  margin: 20px;
+}
+
+#summary .card {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  font-size: 16px;
+  font-weight: bold;
+  color: #2d6cdf;
+}
+
+/* ---------- TABLES ---------- */
+table {
+  width: 95%;
+  margin: 20px auto;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+thead {
+  background: #2d6cdf;
+  color: white;
+}
+
+th, td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+tr:nth-child(even) {
+  background: #f2f2f2;
+}
+
+button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+button:hover {
+  opacity: 0.9;
+}
+
+button.accept {
+  background: #28a745;
+  color: #fff;
+}
+
+button.print {
+  background: #ffc107;
+  color: #fff;
+}
+
+/* ---------- RESPONSIVE ---------- */
+@media screen and (max-width: 768px) {
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  header nav {
+    margin-top: 10px;
+  }
+  table, thead, tbody, th, td, tr {
+    display: block;
+  }
+  tr {
+    margin-bottom: 15px;
+  }
+  th {
+    display: none;
+  }
+  td {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 10px;
+  }
+  td::before {
+    content: attr(data-label);
+    font-weight: bold;
+  }
+  #summary {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+}
+
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Orders Management</h1>
+    <nav>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="orders.html">Orders</a>
+      <a href="appointments.html">Appointments</a>
+    </nav>
+  </header>
+
+  <main>
+    <h2>All Orders</h2>
+    <table id="ordersTable">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Phone</th>
+          <th>Village</th>
+          <th>Total Amount</th>
+          <th>Status</th>
+          <th>Action</th>
+          <th>Print</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </main>
+  <script>
+    // Supabase Setup
+const SUPABASE_URL = "https://sellietbjcoxjbxfvpff.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGxpZXRiamNveGpieGZ2cGZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0MzI2NTcsImV4cCI6MjA3MzAwODY1N30.dCq6MTZn46aPQNP6AgAkraczT4qCgaflikd1vqRRlCc";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function loadOrders() {
+  const { data: orders, error } = await supabase
+    .from("orders")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  const tbody = document.querySelector("#ordersTable tbody");
+  tbody.innerHTML = "";
+
+  orders.forEach(order => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${order.user_name}</td>
+      <td>${order.phone}</td>
+      <td>${order.village}</td>
+      <td>₹${order.total_amount}</td>
+      <td>${order.status}</td>
+      <td>
+        ${order.status === 'pending' ? `<button onclick="acceptOrder('${order.id}')">Accept</button>` : ''}
+      </td>
+      <td><button onclick="printOrder('${order.id}')">Print</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+async function acceptOrder(orderId) {
+  const { error } = await supabase
+    .from("orders")
+    .update({ status: "accepted" })
+    .eq("id", orderId);
+
+  if (error) {
+    alert("Error updating order!");
+    console.error(error);
+  } else {
+    loadOrders();
+  }
+}
+
+async function printOrder(orderId) {
+  const { data: orderItems } = await supabase
+    .from("order_items")
+    .select("medicine_id, quantity, price")
+    .eq("order_id", orderId);
+
+  const { data: order } = await supabase
+    .from("orders")
+    .select("*")
+    .eq("id", orderId)
+    .single();
+
+  let content = `Order ID: ${order.id}\nUser: ${order.user_name}\nPhone: ${order.phone}\nVillage: ${order.village}\nTotal: ₹${order.total_amount}\n\nItems:\n`;
+
+  for (let item of orderItems) {
+    content += `Medicine ID: ${item.medicine_id}, Qty: ${item.quantity}, Price: ₹${item.price}\n`;
+  }
+
+  const printWindow = window.open('', '', 'height=500,width=400');
+  printWindow.document.write('<pre>' + content + '</pre>');
+  printWindow.document.close();
+  printWindow.print();
+}
+
+document.addEventListener("DOMContentLoaded", loadOrders);
+
+  </script>
+</body>
+</html>
